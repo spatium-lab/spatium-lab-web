@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Spatium Lab — Patrimonio digital, precisión milimétrica</title>
+<meta name="description" content="Spatium Lab: documentación digital de patrimonio en Chihuahua, México. Fotogrametría, Gaussian Splatting, levantamiento con dron, H-BIM, tours virtuales y fotografía arquitectónica.">
+<meta property="og:title" content="Spatium Lab — El patrimonio, convertido en activo digital">
+<meta property="og:description" content="Documentación digital de patrimonio con precisión milimétrica. Fotogrametría, H-BIM, tours virtuales y más.">
+<meta property="og:type" content="website">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.spatium-lab.com/">
+<meta property="og:url" content="https://www.spatium-lab.com/">
+<meta property="og:image" content="https://www.spatium-lab.com/assets/og-cover.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Modelo fotogramétrico de la Catedral de Chihuahua — Spatium Lab">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.spatium-lab.com/assets/og-cover.jpg">
+<link rel="icon" type="image/png" href="assets/logo-sphere.png">
+<link rel="apple-touch-icon" href="assets/logo-sphere.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "name": "Spatium Lab",
+  "url": "https://www.spatium-lab.com",
+  "logo": "https://www.spatium-lab.com/assets/logo-sphere.png",
+  "image": "https://www.spatium-lab.com/assets/og-cover.jpg",
+  "description": "Documentación digital de patrimonio en Chihuahua, México. Fotogrametría, Gaussian Splatting, levantamiento con dron, H-BIM, tours virtuales y fotografía arquitectónica.",
+  "telephone": "+526141961448",
+  "email": "hola@spatium-lab.com",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Chihuahua",
+    "addressRegion": "Chihuahua",
+    "addressCountry": "MX"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 28.6353,
+    "longitude": -106.0889
+  },
+  "areaServed": {
+    "@type": "State",
+    "name": "Chihuahua"
+  },
+  "knowsAbout": ["Fotogrametría", "H-BIM", "Documentación de patrimonio", "Gaussian Splatting", "Tours virtuales", "Fotografía arquitectónica", "Levantamiento con dron", "Nubes de puntos", "Ortoimagen"],
+  "sameAs": [
+    "https://www.instagram.com/spatium_lab",
+    "https://www.facebook.com/Spatium.lab"
+  ]
+}
+</script>
+<link rel="preload" as="image" href="assets/ortho-catedral.webp" fetchpriority="high">
+<link rel="preload" as="image" href="assets/ortho-santo.webp">
+<link rel="preload" as="image" href="assets/ortho-santo-mid.webp">
+<link rel="preload" as="image" href="assets/ortho-santo2.webp">
+<link rel="preload" as="image" href="assets/giga-1.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#1CB7AA;
+    --teal-dim:#12867d;
+    --charcoal:#353334;
+    --bg:#121315;
+    --bg2:#191b1d;
+    --panel:#1e2124;
+    --text:#f2f1ee;
+    --muted:#9aa3a2;
+    --line:rgba(255,255,255,.08);
+    --font:'Montserrat', Tahoma, Verdana, 'Segoe UI', sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  section{scroll-margin-top:64px}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--teal);color:#0b0c0d}
+
+  /* ---------- pantalla de carga ---------- */
+  body.loading{overflow:hidden}
+  #loader{
+    position:fixed;inset:0;z-index:200;background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
+    transition:opacity .7s ease;
+  }
+  #loader.done{opacity:0;pointer-events:none}
+  #loader img{width:74px;height:auto;animation:ldPulse 1.6s ease-in-out infinite}
+  @keyframes ldPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.92);opacity:.7}}
+  .ldBar{width:min(240px,60vw);height:2px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}
+  .ldBar i{
+    display:block;height:100%;width:10%;background:var(--teal);
+    transition:width .4s ease;
+  }
+  .ldTxt{font-size:12.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted)}
+
+  /* ---------- canvas 3D fijo ---------- */
+  #gl{
+    position:fixed;inset:0;width:100%;height:100%;
+    z-index:0;pointer-events:none;
+  }
+
+  /* ---------- barra superior ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:calc(14px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) 14px max(24px, env(safe-area-inset-left));
+    background:linear-gradient(to bottom, rgba(18,19,21,.88), rgba(18,19,21,0));
+    backdrop-filter:blur(2px);
+  }
+  .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text)}
+  .brand img{width:34px;height:auto;flex:none}
+  .brand .bt{display:flex;flex-direction:column;line-height:1.2}
+  .brand b{font-size:17px;letter-spacing:.34em;font-weight:300}
+  .brand .lab{font-size:10.5px;letter-spacing:.55em;color:var(--teal);text-transform:uppercase}
+  .chip{
+    font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--teal);border:1px solid var(--teal-dim);
+    padding:8px 16px;border-radius:20px;white-space:nowrap;
+    background:rgba(28,183,170,.07);
+  }
+
+  /* ---------- nav de puntos ---------- */
+  nav.dots{
+    position:fixed;right:22px;top:50%;transform:translateY(-50%);
+    z-index:50;display:flex;flex-direction:column;gap:16px;
+  }
+  nav.dots a{
+    width:8px;height:8px;border-radius:50%;
+    background:rgba(255,255,255,.25);display:block;
+    transition:all .3s;position:relative;
+  }
+  nav.dots a.active{background:var(--teal);transform:scale(1.4);box-shadow:0 0 12px rgba(28,183,170,.7)}
+  nav.dots a:hover::after{
+    content:attr(data-label);position:absolute;right:20px;top:50%;
+    transform:translateY(-50%);font-size:12.5px;letter-spacing:.12em;
+    color:var(--text);background:rgba(20,22,24,.92);padding:6px 12px;
+    border-radius:4px;white-space:nowrap;text-transform:uppercase;
+  }
+
+  section{position:relative}
+  .solid{background:var(--bg);z-index:2}
+
+  /* ---------- HERO ---------- */
+  #hero{height:340vh;z-index:1}
+  #hero .sticky{
+    position:sticky;top:0;height:100vh;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    text-align:center;padding:0 20px;
+  }
+  .eyebrow{
+    font-size:14px;font-weight:600;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--teal);margin-bottom:22px;
+  }
+  .heroLogo{
+    width:min(230px,42vw);height:auto;margin-bottom:34px;
+    filter:drop-shadow(0 4px 24px rgba(0,0,0,.5));
+  }
+  #hero h1{
+    font-size:clamp(34px,6vw,74px);font-weight:400;line-height:1.12;
+    max-width:1000px;letter-spacing:-.01em;
+    text-shadow:0 2px 30px rgba(0,0,0,.6);
+  }
+  #hero h1 b{color:var(--teal);font-weight:400}
+  #hero p.sub{
+    margin:26px auto 0;font-size:clamp(15.5px,1.7vw,19px);color:#c2c9c8;
+    max-width:660px;line-height:1.7;text-align:center;
+  }
+  .scrollhint{
+    position:absolute;bottom:36px;left:50%;transform:translateX(-50%);
+    font-size:12.5px;letter-spacing:.24em;text-transform:uppercase;color:#c8cecd;
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+  .scrollhint .bar{
+    width:1px;height:44px;background:linear-gradient(var(--teal),transparent);
+    animation:drop 1.8s ease-in-out infinite;
+  }
+  @keyframes drop{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+  #heroCopy{transition:opacity .1s linear}
+  #heroCopy2{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;text-align:center;
+    opacity:0;padding:0 20px;
+  }
+  #heroCopy2 h2{font-size:clamp(26px,4vw,52px);font-weight:400;max-width:900px;line-height:1.2}
+  #heroCopy2 p{
+    margin:20px auto 0;color:#e6e9e8;max-width:620px;line-height:1.7;
+    font-size:clamp(16px,1.8vw,20px);text-align:center;
+    text-shadow:0 2px 16px rgba(0,0,0,.85);
+  }
+
+  /* ---------- manifiesto ---------- */
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+  #manifiesto{padding:140px 0 120px}
+  #manifiesto h2{
+    font-size:clamp(24px,3.4vw,44px);font-weight:400;line-height:1.35;max-width:900px;
+    margin:0 auto;text-align:center;
+  }
+  #manifiesto h2 b{color:var(--teal);font-weight:400}
+  .stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:1px;background:var(--line);margin-top:90px;border:1px solid var(--line);
+  }
+  .stat{background:var(--bg);padding:38px 30px}
+  .stat .n{font-size:clamp(30px,3.6vw,50px);color:var(--teal);letter-spacing:-.02em}
+  .stat .l{margin-top:10px;font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;color:#aeb6b5;line-height:1.65}
+
+  /* ---------- video catedral ---------- */
+  #film{position:relative}
+  .videoWrap{position:relative;width:100vw;height:94vh;overflow:hidden;background:#000}
+  .videoWrap video{width:100%;height:100%;object-fit:cover;display:block}
+  .filmCapt{
+    position:absolute;left:0;right:0;bottom:8vh;text-align:center;padding:0 24px;
+    text-shadow:0 2px 22px rgba(0,0,0,.85);pointer-events:none;
+  }
+  .filmCapt h2{font-size:clamp(24px,3.6vw,48px);font-weight:400;line-height:1.2;margin-top:12px}
+  .videoWrap::after{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(to top, rgba(11,12,13,.55), transparent 35%);
+  }
+
+  /* ---------- zoom gigapixel ---------- */
+  #zoom{height:480vh}
+  #zoom .sticky{position:sticky;top:0;height:100vh;overflow:hidden;background:var(--bg2)}
+  #zoomArt{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    will-change:transform;
+    transform-origin:50% 72%;
+  }
+  #zoomArt svg{width:min(88vw,860px);height:auto;display:block}
+  .zoomStage{
+    position:relative;
+    transform-origin:48.2% 58.0%;
+  }
+  .zoomStage > img:first-child{
+    display:block;width:auto;height:auto;
+    max-width:90vw;max-height:78vh;
+    border-radius:6px;
+    box-shadow:0 30px 90px rgba(0,0,0,.65);
+  }
+  #zoomDetail{
+    position:absolute;left:37.7%;top:45.4%;width:21%;height:auto;
+    opacity:0;display:block;
+  }
+  #zoomDetailM{
+    position:absolute;left:42.2%;top:50.79%;width:12%;height:auto;
+    opacity:0;display:block;
+  }
+  #zoomDetail2{
+    position:absolute;left:44.2%;top:53.19%;width:8%;height:auto;
+    opacity:0;display:block;
+  }
+  /* cada parche en su propia capa de GPU: se rasteriza nítido a cualquier escala,
+     sin heredar el límite de textura de la capa base gigante */
+  #zoomDetail,#zoomDetailM,#zoomDetail2{
+    transform:translateZ(0);will-change:transform,opacity;backface-visibility:hidden;
+  }
+  .zoomCaption{
+    position:absolute;left:0;right:0;text-align:center;padding:0 24px;
+    transition:opacity .35s;pointer-events:none;
+  }
+  .zoomCaption.top{top:9vh}
+  .zoomCaption.bottom{bottom:9vh}
+  .zoomCaption .eyebrow{margin-bottom:12px}
+  .zoomCaption h3{font-size:clamp(22px,3.2vw,42px);font-weight:400;text-shadow:0 1px 4px rgba(0,0,0,.85),0 0 24px rgba(0,0,0,.6)}
+  .zoomCaption p{color:#e2e6e5;margin-top:12px;font-size:clamp(15px,1.5vw,17px);max-width:580px;margin-left:auto;margin-right:auto;line-height:1.7;text-shadow:0 1px 4px rgba(0,0,0,.85),0 0 18px rgba(0,0,0,.6)}
+  .zoomCaption{background:radial-gradient(ellipse at center, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 70%);padding:18px 28px;border-radius:20px}
+
+  /* ---------- servicios ---------- */
+  #servicios{padding:150px 0}
+  .secHead{margin-bottom:70px;text-align:center}
+  .secHead h2{font-size:clamp(28px,4vw,54px);font-weight:400;line-height:1.15;max-width:820px;margin:0 auto}
+  .secHead p{color:#aeb6b5;margin:18px auto 0;max-width:640px;line-height:1.75;font-size:16.5px}
+  .grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:1px;background:var(--line);border:1px solid var(--line);
+  }
+  .card{
+    background:var(--bg);padding:46px 38px;position:relative;overflow:hidden;
+    transition:background .4s;
+  }
+  .card:hover{background:var(--panel)}
+  .card::before{
+    content:'';position:absolute;top:0;left:0;width:100%;height:2px;
+    background:var(--teal);transform:scaleX(0);transform-origin:left;
+    transition:transform .5s;
+  }
+  .card:hover::before{transform:scaleX(1)}
+  .card .num{font-size:13px;font-weight:600;letter-spacing:.22em;color:var(--teal);margin-bottom:26px;text-transform:uppercase}
+  .card h3{font-size:21px;font-weight:700;letter-spacing:.01em;margin-bottom:14px}
+  .card p{color:#aeb6b5;font-size:15.5px;line-height:1.75}
+  .card .ico{
+    position:absolute;right:26px;top:34px;opacity:.35;
+    transition:opacity .4s, transform .4s;
+  }
+  .card:hover .ico{opacity:1;transform:translateY(-3px)}
+  .card .ico svg{width:34px;height:34px;stroke:var(--teal);fill:none;stroke-width:1.3}
+
+  /* ---------- proceso 4 pasos ---------- */
+  .steps{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:1px;background:var(--line);border:1px solid var(--line);margin-top:60px;
+  }
+  .step{background:var(--bg);padding:34px 28px;display:flex;flex-direction:column;gap:6px}
+  .step i{
+    font-style:normal;width:34px;height:34px;border-radius:50%;
+    border:1px solid var(--teal);color:var(--teal);
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;margin-bottom:12px;
+  }
+  .step b{font-size:16px;letter-spacing:.06em}
+  .step span{color:#aeb6b5;font-size:14px;line-height:1.6}
+
+  /* ---------- equipo: carrusel 3D ---------- */
+  .gridbg{
+    background:
+      linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px),
+      #0b0c0d;
+    background-size:56px 56px;
+  }
+  #equipo{height:460vh;position:relative;z-index:2}
+  #equipo .sticky{
+    position:sticky;top:0;height:100vh;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    gap:30px;padding:80px 0 40px;
+  }
+  .eqHead{text-align:center;padding:0 24px}
+  .eqHead h2{font-size:clamp(22px,3.2vw,40px);font-weight:400;line-height:1.25;margin-top:14px}
+  .stage{
+    perspective:2400px;width:100%;flex:none;
+    display:flex;justify-content:center;align-items:center;
+    height:min(66vh,720px);
+  }
+  .ring{
+    position:relative;transform-style:preserve-3d;will-change:transform;
+    width:min(580px,52vw,48vh);aspect-ratio:4/5;
+  }
+  .ring figure{
+    position:absolute;inset:0;margin:0;border-radius:12px;overflow:hidden;
+    border:1px solid rgba(28,183,170,.35);
+    box-shadow:0 24px 60px rgba(0,0,0,.55);
+    background:#0b0c0d;
+    will-change:transform,opacity;
+  }
+  .ring img{width:100%;height:100%;object-fit:cover;display:block}
+  .eqHint{
+    font-size:12.5px;letter-spacing:.24em;text-transform:uppercase;color:#c8cecd;
+  }
+
+  /* ---------- visor splat ---------- */
+  #splat{padding:150px 0}
+  .viewer{
+    position:relative;width:100vw;margin-left:calc(50% - 50vw);
+    height:88vh;background:#000;overflow:hidden;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  }
+  .viewer video{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  }
+
+  /* ---------- panorama 360 ---------- */
+  #pano360{height:360vh;position:relative;z-index:2;background:var(--bg)}
+  #pano360 .sticky{position:sticky;top:0;height:100vh;overflow:hidden}
+  #panoGl{position:absolute;inset:0;width:100%;height:100%;touch-action:pan-y;cursor:grab}
+  .panoCapt{
+    position:absolute;left:0;right:0;bottom:7vh;text-align:center;padding:0 24px;
+    pointer-events:none;text-shadow:0 2px 18px rgba(0,0,0,.8);
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .panoCapt h2{font-size:clamp(22px,3.4vw,44px);font-weight:400;margin-top:10px}
+  .panoCapt p{color:rgba(242,241,238,.9);margin-top:10px;font-size:clamp(14px,1.4vw,16px);max-width:540px;line-height:1.65}
+  .panoCapt .ttprogress{margin-top:22px}
+
+  /* ---------- turntable ---------- */
+  #turntable{height:340vh;z-index:1}
+  #turntable .sticky{
+    position:sticky;top:0;height:100vh;
+    display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
+    text-align:center;padding-bottom:9vh;
+  }
+  #turntable .capt{max-width:680px;padding:0 24px}
+  #turntable h2{font-size:clamp(24px,3.6vw,48px);font-weight:400;line-height:1.2}
+  #turntable p{color:#c2c9c8;margin-top:16px;line-height:1.7;font-size:clamp(15px,1.5vw,17px)}
+  .ttprogress{
+    margin:30px auto 0;width:min(300px,60vw);height:2px;background:rgba(255,255,255,.12);
+    border-radius:2px;overflow:hidden;
+  }
+  .ttprogress i{display:block;height:100%;width:0;background:var(--teal)}
+  .ttdeg{font-size:12.5px;letter-spacing:.24em;color:var(--teal);margin-top:12px;text-transform:uppercase}
+
+  /* ---------- MDV + gigapixel ---------- */
+  #mdv{height:540vh;background:var(--bg2)}
+  .mdvSticky{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:stretch;overflow:hidden;padding-top:72px}
+  #mdv .split{display:flex;flex-direction:column;gap:12px;width:100%;flex:1;min-height:0}
+  #mdv .split > div:first-child{max-width:960px;margin:0 auto;text-align:center;padding:0 24px;flex:none}
+  .gigaPanel{
+    position:relative;flex:1;min-height:0;width:100vw;margin-left:calc(50% - 50vw);
+    border-radius:0;overflow:hidden;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0b0c0d;
+  }
+  .gigaPanel .giga{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    opacity:0;will-change:transform,opacity;
+  }
+  .gigaPanel .giga:first-child{object-fit:contain}
+  /* 1.5x: contenida (con marco), para que el paso desde el cuadro completo sea gradual */
+  .gigaPanel .giga:nth-child(2){object-fit:contain}
+  .gigaMeta{
+    margin-top:12px;display:flex;align-items:center;justify-content:center;gap:14px;
+    color:var(--muted);font-size:14px;
+  }
+  .gigaZoomTag{
+    flex:none;min-width:52px;text-align:center;
+    border:1px solid var(--teal-dim);color:var(--teal);
+    padding:8px 10px;border-radius:24px;font-size:14px;letter-spacing:.08em;
+  }
+  #mdv h2{font-size:clamp(22px,2.6vw,38px);font-weight:400;line-height:1.15}
+  #mdv h2 b{color:var(--teal);font-weight:400}
+  #mdv p{color:#aeb6b5;margin:10px auto 0;line-height:1.6;font-size:15px;max-width:860px}
+  #mdv p:nth-of-type(2){display:none}
+  .mdvframe{
+    aspect-ratio:16/11;border:1px solid var(--line);border-radius:8px;
+    background:
+      radial-gradient(ellipse at 50% 120%, rgba(28,183,170,.18), transparent 60%),
+      linear-gradient(160deg,#1a1d1f, #101214);
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;
+    position:relative;overflow:hidden;
+  }
+  .mdvframe::after{
+    content:'';position:absolute;inset:0;
+    background-image:linear-gradient(rgba(28,183,170,.06) 1px, transparent 1px),linear-gradient(90deg, rgba(28,183,170,.06) 1px, transparent 1px);
+    background-size:36px 36px;
+    mask-image:radial-gradient(ellipse at center, black 30%, transparent 75%);
+  }
+  .mdvframe .tag{font-size:10px;letter-spacing:.34em;color:var(--teal);text-transform:uppercase;z-index:1}
+  .mdvframe .t{font-size:clamp(18px,2vw,26px);z-index:1;text-align:center;padding:0 30px;line-height:1.4}
+  .mdvframe .soon{font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;z-index:1}
+
+  /* ---------- CTA / construcción ---------- */
+  #contacto{padding:160px 0 120px;text-align:center}
+  #contacto .eyebrow{margin-bottom:26px}
+  #contacto h2{font-size:clamp(30px,4.6vw,62px);font-weight:400;line-height:1.15;max-width:880px;margin:0 auto}
+  #contacto h2 b{color:var(--teal);font-weight:400}
+  #contacto p{color:#aeb6b5;margin:26px auto 0;max-width:580px;line-height:1.8;font-size:16.5px}
+  .ctas{display:flex;gap:16px;justify-content:center;margin-top:48px;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:16px 34px;border-radius:40px;text-decoration:none;
+    font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    transition:all .3s;
+  }
+  .btn svg{width:18px;height:18px}
+  .btn.primary{background:var(--teal);color:#0b0c0d;font-weight:700}
+  .btn.primary:hover{background:#25d4c5;transform:translateY(-2px);box-shadow:0 10px 30px rgba(28,183,170,.35)}
+  .btn.ghost{border:1px solid rgba(255,255,255,.25);color:var(--text)}
+  .btn.ghost:hover{border-color:var(--teal);color:var(--teal)}
+
+  footer{
+    border-top:1px solid var(--line);padding:44px 28px;
+    display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
+    color:#aeb6b5;font-size:14px;letter-spacing:.05em;line-height:1.7;
+    background:var(--bg);position:relative;z-index:2;
+  }
+  footer .fb b{color:var(--text);letter-spacing:.24em}
+  footer .fb b em{color:var(--teal);font-style:normal}
+
+  /* ---------- reveal ---------- */
+  .reveal{opacity:0;transform:translateY(34px);transition:opacity .8s ease, transform .8s ease}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.1s}.reveal.d2{transition-delay:.2s}.reveal.d3{transition-delay:.3s}
+
+  /* ---------- vignette ---------- */
+  .vignette{
+    position:fixed;inset:0;pointer-events:none;z-index:40;
+    background:radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.42) 100%);
+  }
+
+  @media (max-width:860px){
+    #mdv h2{font-size:22px}
+    #mdv p{display:none}
+    .gigaMeta{margin-top:8px;font-size:13px}
+    .mdvSticky{padding-top:74px}
+    nav.dots{display:none}
+    header{padding:14px 18px}
+    .chip{font-size:10.5px;padding:6px 12px}
+  }
+  /* ---------- pantallas bajas: celular en horizontal ---------- */
+  @media (max-height:560px){
+    .heroLogo{width:100px;margin-bottom:12px}
+    #hero h1{font-size:clamp(20px,4.6vw,34px)}
+    .eyebrow{font-size:11px;margin-bottom:10px;letter-spacing:.22em}
+    #hero p.sub{font-size:13px;margin-top:10px;max-width:520px}
+    #heroCopy2 h2{font-size:clamp(18px,3.6vw,30px)}
+    #heroCopy2 p{font-size:14px;margin-top:10px}
+    .scrollhint{display:none}
+    #equipo .sticky{gap:12px;padding:64px 0 16px}
+    .eqHead h2{font-size:17px}
+    .stage{height:44vh}
+    #turntable h2{font-size:clamp(18px,3.4vw,28px)}
+    #turntable p{font-size:13px;margin-top:8px}
+    .ttprogress{margin-top:12px}
+    #mdv h2{font-size:18px}
+    #mdv p{display:none}
+    .gigaMeta{margin-top:6px;font-size:12px}
+    .mdvSticky{padding-top:58px}
+    .panoCapt h2{font-size:clamp(18px,3.4vw,28px)}
+    .panoCapt p{display:none}
+    .filmCapt h2{font-size:clamp(18px,3.4vw,28px)}
+  }
+  @media (max-width:600px){
+    .stage{perspective:1000px;height:min(58vh,520px)}
+    .ring{width:min(360px,78vw,42vh)}
+  }
+  @media (max-width:480px){
+    .chip{font-size:9.5px;padding:5px 9px;letter-spacing:.1em}
+    .brand b{font-size:14px;letter-spacing:.22em}
+    .brand img{width:28px}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    .reveal{opacity:1;transform:none;transition:none}
+  }
+</style>
+</head>
+<body class="loading">
+
+<div id="loader">
+  <img src="assets/logo-sphere.png" alt="Spatium Lab">
+  <div class="ldBar"><i id="ldFill"></i></div>
+  <div class="ldTxt">Cargando patrimonio digital…</div>
+</div>
+
+<canvas id="gl"></canvas>
+<div class="vignette"></div>
+
+<header>
+  <a class="brand" href="#hero">
+    <img src="assets/logo-sphere.png" alt="Spatium Lab">
+    <span class="bt"><b>SPATIUM</b><span class="lab">L&nbsp;A&nbsp;B</span></span>
+  </a>
+  <div class="chip">Chihuahua · México</div>
+</header>
+
+<nav class="dots" aria-label="Navegación">
+  <a href="#hero" data-label="Inicio" aria-label="Ir a Inicio"></a>
+  <a href="#manifiesto" data-label="Quiénes somos" aria-label="Ir a Quiénes somos"></a>
+  <a href="#zoom" data-label="Precisión" aria-label="Ir a Precisión"></a>
+  <a href="#servicios" data-label="Servicios" aria-label="Ir a Servicios"></a>
+  <a href="#equipo" data-label="Equipo" aria-label="Ir a Equipo"></a>
+  <a href="#splat" data-label="Gaussian Splatting" aria-label="Ir a Gaussian Splatting"></a>
+  <a href="#pano360" data-label="360°" aria-label="Ir a Recorridos 360"></a>
+  <a href="#mdv" data-label="MDV" aria-label="Ir a Museo Digital del Virreinato"></a>
+  <a href="#contacto" data-label="Contacto" aria-label="Ir a Contacto"></a>
+</nav>
+
+<!-- ============ HERO: nube de puntos que se ensambla ============ -->
+<section id="hero">
+  <div class="sticky">
+    <div id="heroCopy">
+      <img class="heroLogo" src="assets/logo-white.png" alt="Spatium Lab">
+      <div class="eyebrow">Patrimonio · Historia · Cultura · Tecnología</div>
+      <h1>El patrimonio de Chihuahua,<br>convertido en <b>activo digital</b>.</h1>
+      <p class="sub">Digitalizamos, conservamos y difundimos el patrimonio cultural e histórico de Chihuahua mediante tecnologías digitales avanzadas.</p>
+    </div>
+    <div id="heroCopy2">
+      <div class="eyebrow">Millones de puntos. Un solo propósito.</div>
+      <h2>Cada punto que ves es una medición real.<br>Así reconstruimos la historia.</h2>
+      <p>Fotogrametría de alta densidad, vuelos de dron y captura de campo: de la piedra al modelo, sin perder un milímetro.</p>
+    </div>
+    <div class="scrollhint"><span>Desliza para reconstruir</span><span class="bar"></span></div>
+  </div>
+</section>
+
+<!-- ============ MANIFIESTO ============ -->
+<section id="manifiesto" class="solid">
+  <div class="wrap">
+    <h2 class="reveal">Cada templo, cada retablo, cada muro guarda <b>tres siglos de historia</b>. Nuestro trabajo es asegurarnos de que sobrevivan al cuarto.</h2>
+    <div class="stats">
+      <div class="stat reveal"><div class="n">15+</div><div class="l">Años restaurando patrimonio colonial</div></div>
+      <div class="stat reveal d1"><div class="n">3D</div><div class="l">Fotogrametría · Gigapixel · Recorridos virtuales</div></div>
+      <div class="stat reveal d2"><div class="n">H-BIM</div><div class="l">Modelos de información para conservación</div></div>
+      <div class="stat reveal d3"><div class="n">MX</div><div class="l">Chihuahua · Parque Tecnológico Orión</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VIDEO CATEDRAL ============ -->
+<section id="film" class="solid">
+  <div class="videoWrap">
+    <video id="catVideo" src="assets/catedral.mp4" muted loop playsinline preload="metadata"></video>
+    <div class="filmCapt">
+      <div class="eyebrow">Modelo fotogramétrico · Catedral de Chihuahua</div>
+      <h2>73 millones de puntos.<br>Una catedral entera, medible.</h2>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ZOOM GIGAPIXEL ============ -->
+<section id="zoom">
+  <div class="sticky">
+    <div id="zoomArt">
+      <div class="zoomStage" id="zoomStage">
+        <img src="assets/ortho-catedral.webp" alt="Ortoimagen de la fachada de la Catedral de Chihuahua, generada por fotogrametría">
+        <img id="zoomDetail" src="assets/ortho-santo.webp" alt="Detalle del santo del medallón central de la portada" aria-hidden="true">
+        <img id="zoomDetailM" src="assets/ortho-santo-mid.webp" alt="" aria-hidden="true">
+        <img id="zoomDetail2" src="assets/ortho-santo2.webp" alt="Acercamiento máximo al santo del medallón" aria-hidden="true">
+      </div>
+      <svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" aria-label="Portada de templo colonial, ilustración técnica" style="display:none">
+        <defs>
+          <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1CB7AA" stop-opacity=".9"/>
+            <stop offset="1" stop-color="#1CB7AA" stop-opacity=".25"/>
+          </linearGradient>
+        </defs>
+        <g stroke="#4a5250" fill="none" stroke-width="1.4">
+          <!-- fachada -->
+          <rect x="180" y="140" width="540" height="440"/>
+          <line x1="180" y1="580" x2="720" y2="580"/>
+          <!-- espadaña -->
+          <path d="M300 140 L450 48 L600 140"/>
+          <path d="M415 140 L415 92 A35 35 0 0 1 485 92 L485 140"/>
+          <!-- torre -->
+          <rect x="620" y="60" width="100" height="80"/>
+          <path d="M620 60 L670 12 L720 60"/>
+          <path d="M645 140 L645 100 A25 25 0 0 1 695 100 L695 140"/>
+          <!-- ventana coro -->
+          <circle cx="450" cy="215" r="34"/>
+          <circle cx="450" cy="215" r="24" stroke-dasharray="4 5"/>
+        </g>
+        <!-- portal (zona de zoom) -->
+        <g stroke="url(#fade)" fill="none" stroke-width="2">
+          <path d="M370 580 L370 400 A80 80 0 0 1 530 400 L530 580"/>
+          <path d="M390 580 L390 408 A60 60 0 0 1 510 408 L510 580"/>
+          <!-- dovelas del arco -->
+          <line x1="370" y1="400" x2="390" y2="408"/>
+          <line x1="381" y1="365" x2="399" y2="378"/>
+          <line x1="406" y1="337" x2="419" y2="356"/>
+          <line x1="440" y1="322" x2="446" y2="349"/>
+          <line x1="476" y1="326" x2="468" y2="352"/>
+          <line x1="507" y1="348" x2="493" y2="368"/>
+          <line x1="524" y1="380" x2="505" y2="392"/>
+          <!-- clave -->
+          <rect x="436" y="312" width="28" height="20"/>
+        </g>
+        <!-- puntos de control fotogramétrico -->
+        <g fill="#1CB7AA">
+          <circle cx="370" cy="400" r="3"/><circle cx="530" cy="400" r="3"/>
+          <circle cx="450" cy="320" r="3"/><circle cx="450" cy="215" r="3"/>
+          <circle cx="300" cy="140" r="3"/><circle cx="600" cy="140" r="3"/>
+          <circle cx="670" cy="12" r="3"/><circle cx="180" cy="580" r="3"/><circle cx="720" cy="580" r="3"/>
+        </g>
+        <g stroke="#1CB7AA" stroke-opacity=".35" stroke-dasharray="3 6" fill="none">
+          <line x1="370" y1="400" x2="530" y2="400"/>
+          <line x1="450" y1="320" x2="450" y2="215"/>
+          <line x1="300" y1="140" x2="600" y2="140"/>
+        </g>
+        <!-- cotas -->
+        <g font-family="Tahoma" font-size="11" fill="#7d8886">
+          <text x="452" y="398" text-anchor="middle">r = 0.80 m ±1 mm</text>
+          <text x="240" y="600">GCP-07</text>
+          <text x="660" y="600">GCP-08</text>
+        </g>
+      </svg>
+    </div>
+    <div class="zoomCaption top" id="zc1">
+      <div class="eyebrow">Ortoimagen · Catedral de Chihuahua</div>
+      <h3>Primero, la fachada completa.</h3>
+    </div>
+    <div class="zoomCaption bottom" id="zc2" style="opacity:0">
+      <h3>Después, el santo del medallón.</h3>
+      <p>74 megapixeles: del conjunto urbano a la escultura de la portada, en la misma ortoimagen fotogramétrica.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SERVICIOS ============ -->
+<section id="servicios" class="solid">
+  <div class="wrap">
+    <div class="secHead reveal">
+      <div class="eyebrow">Lo que hacemos</div>
+      <h2>Seis maneras de hacer que el patrimonio trabaje para el futuro.</h2>
+      <p>De la captura en campo a la experiencia digital: un flujo completo de documentación, análisis y divulgación.</p>
+    </div>
+    <div class="grid">
+      <div class="card reveal">
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.6"/><path d="M8 6l1.5-2h5L16 6"/></svg></div>
+        <div class="num">01 · Captura visual</div><h3>Fotografía de arquitectura y aérea</h3>
+        <p>Fotografía profesional terrestre y con dron: arquitectura, video y fotografía 360° para documentar y comunicar cada inmueble.</p>
+      </div>
+      <div class="card reveal d1">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg></div>
+        <div class="num">02 · Fotogrametría</div><h3>Topográfica, de objetos y de inmuebles</h3>
+        <p>Reconstrucción tridimensional de precisión: del territorio completo al objeto de colección, cada medición es un dato verificable.</p>
+      </div>
+      <div class="card reveal d2">
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="1.6"/><circle cx="18" cy="7" r="1.6"/><circle cx="12" cy="13" r="1.6"/><circle cx="6" cy="18" r="1.6"/><circle cx="18" cy="17" r="1.6"/><circle cx="12" cy="4" r="1.1"/><circle cx="4" cy="12" r="1.1"/><circle cx="20" cy="12" r="1.1"/></svg></div>
+        <div class="num">03 · Digitalización</div><h3>Nubes de puntos y modelos con textura</h3>
+        <p>Nube de puntos, curvas de nivel, DEM/DTM/DSM, ortoimagen y gigapixel: la base técnica que sirve al restaurador y al investigador.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 21V8l7-5 7 5v13"/><path d="M10 21v-6h4v6M3 12h14M21 21V11l-4-3"/></svg></div>
+        <div class="num">04 · Proyecto</div><h3>Planos y modelado H-BIM</h3>
+        <p>Planos AutoCAD y modelos 3D en Revit: información del edificio histórico lista para proyectos de restauración y conservación.</p>
+      </div>
+      <div class="card reveal d1">
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg></div>
+        <div class="num">05 · Experiencias</div><h3>Recorridos virtuales inmersivos</h3>
+        <p>Tours virtuales que llevan el monumento a cualquier pantalla — divulgación, turismo cultural y acceso sin fronteras.</p>
+      </div>
+      <div class="card reveal d2">
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8M12 18v4M6 9h6M6 13h9"/></svg></div>
+        <div class="num">06 · Difusión</div><h3>Micrositios y sitios web</h3>
+        <p>Micrositios cinemáticos y sitios web para proyectos culturales: la capa de comunicación que convierte datos en experiencias.</p>
+      </div>
+    </div>
+
+    <div class="steps reveal">
+      <div class="step"><i>1</i><b>Cuéntanos</b><span>tu necesidad</span></div>
+      <div class="step"><i>2</i><b>Diseñamos</b><span>la estrategia de captura</span></div>
+      <div class="step"><i>3</i><b>Procesamos</b><span>y analizamos la información</span></div>
+      <div class="step"><i>4</i><b>Entregamos</b><span>productos digitales listos para usar</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EQUIPO: carrusel 3D ============ -->
+<section id="equipo" class="gridbg">
+  <div class="sticky">
+    <div class="eqHead">
+      <div class="eyebrow">El equipo</div>
+      <h2>Arquitectos, antropólogos, restauradores y diseñadores.<br>Un mismo propósito.</h2>
+    </div>
+    <div class="stage">
+      <div class="ring" id="ring">
+        <figure><img src="assets/equipo/fernando.jpeg" alt="Rey Fernando Montes Trevizo — Arquitecto. Fotogrametría, H-BIM, restauración de patrimonio"></figure>
+        <figure><img src="assets/equipo/adriana.png" alt="Adriana Rojas Ayala — Diseño gráfico. Diseño web, fotografía, restauración de patrimonio"></figure>
+        <figure><img src="assets/equipo/paulina.jpeg" alt="Paulina Vianey Carrasco Valencia — Arquitecta. Fotogrametría, H-BIM, restauración de patrimonio"></figure>
+        <figure><img src="assets/equipo/kevin.jpeg" alt="Kevin Alexis Armendáriz Álvarez — Arquitecto. Fotogrametría, H-BIM, restauración de patrimonio"></figure>
+        <figure><img src="assets/equipo/axel.png" alt="Axel Iván Delgado Ruiz — Diseño gráfico. Diseño web, fotografía, restauración de patrimonio"></figure>
+        <figure><img src="assets/equipo/joseluis.jpg.jpeg" alt="José Luis Domínguez — Antropólogo. Piloto de dron, fotogrametría terrestre y aérea, gigapixel"></figure>
+      </div>
+    </div>
+    <div class="eqHint">Desliza para conocer al equipo</div>
+  </div>
+</section>
+
+<!-- ============ GAUSSIAN SPLATTING EN VIVO ============ -->
+<section id="splat" class="solid">
+  <div class="wrap">
+    <div class="secHead reveal">
+      <div class="eyebrow">Gaussian Splatting · Demo real</div>
+      <h2>Esto no es un render. Es una captura real.</h2>
+      <p>Un recorrido dentro del modelo Gaussian Splatting de la Catedral producido por Spatium Lab: calidad fotográfica, generada punto por punto desde la captura.</p>
+    </div>
+    <div class="viewer reveal">
+      <video id="splatVideo" src="assets/catedral-3dgs.mp4" muted loop playsinline preload="metadata"></video>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PANORAMA 360 ============ -->
+<section id="pano360">
+  <div class="sticky">
+    <canvas id="panoGl"></canvas>
+    <div class="panoCapt">
+      <div class="eyebrow">Recorridos virtuales · 360°</div>
+      <h2>Templo del Sagrado Corazón de Jesús</h2>
+      <p>Chihuahua, Chih. — Fotografía inmersiva de Spatium Lab. Sigue deslizando para girar la vista.</p>
+      <div class="ttprogress"><i id="panobar"></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TURNTABLE 360 ============ -->
+<section id="turntable">
+  <div class="sticky">
+    <div class="capt">
+      <div class="eyebrow">Escaneado · Modelado · Preservado</div>
+      <h2>Gira la historia con tus propias manos.</h2>
+      <p>Quinta Carolina, Chihuahua — cada modelo que producimos es navegable, medible y permanente. Sigue deslizando para rodearla.</p>
+      <div class="ttprogress"><i id="ttbar"></i></div>
+      <div class="ttdeg" id="ttdeg">0°</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MDV ============ -->
+<section id="mdv" class="solid" style="background:var(--bg2)">
+  <div class="mdvSticky">
+    <div class="wrap split">
+      <div>
+        <div class="eyebrow">Proyecto insignia</div>
+        <h2><a href="https://www.museodigitaldelvirreinato.org" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Museo Digital del <b>Virreinato</b></a></h2>
+        <p>Tres siglos de arte y arquitectura virreinal de Chihuahua, reunidos en un museo que no necesita muros. Piezas digitalizadas en 3D, misiones reconstruidas punto por punto y narrativas curatoriales que conectan el territorio con su memoria.</p>
+        <a href="https://www.museodigitaldelvirreinato.org" target="_blank" rel="noopener" class="btn ghost" style="margin-top:16px;display:inline-flex;font-size:12px;padding:10px 22px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:16px;height:16px"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>
+          Visitar museo
+        </a>
+        <p>A la derecha: un óleo virreinal capturado en <b style="color:var(--teal);font-weight:400">gigapixel</b> — una imagen de ultra alta resolución compuesta por decenas de tomas macro, que conserva hasta el más mínimo detalle de la obra. Sigue deslizando para acercarte: pinceladas, veladuras y craqueladuras, el nivel de lectura que un restaurador o un historiador necesita, sin tocar la pieza.</p>
+        <div class="gigaMeta"><span class="gigaZoomTag" id="gigaZoom">1×</span><span id="gigaCapt">Óleo virreinal · el conjunto completo</span></div>
+      </div>
+      <div class="gigaPanel">
+        <img class="giga" src="assets/giga-1.webp" alt="Óleo virreinal completo: Inmaculada Concepción sobre querubines">
+        <img class="giga" src="assets/giga-15.webp" data-wide="assets/giga-15w.webp" alt="La Virgen entre nubes de querubines">
+        <img class="giga" src="assets/giga-2.webp" data-wide="assets/giga-2w.webp" alt="La Virgen de medio cuerpo, manos unidas sobre el pecho">
+        <img class="giga" src="assets/giga-2b.webp" data-wide="assets/giga-2bw.webp" alt="El rostro de la Virgen entre querubines">
+        <img class="giga" src="assets/giga-4.webp" data-wide="assets/giga-4w.webp" alt="Macro de los ojos con craqueladuras de la pintura">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section id="contacto" class="solid">
+  <div class="wrap">
+    <div class="eyebrow reveal">Hablemos</div>
+    <h2 class="reveal">Tu patrimonio merece ser<br><b>permanente.</b></h2>
+    <p class="reveal d1">Si tienes un proyecto de documentación, digitalización o divulgación de patrimonio, hablemos hoy.</p>
+    <div class="ctas reveal d2">
+      <a class="btn primary" href="https://wa.me/526141961448?text=Hola%20Spatium%20Lab%2C%20me%20interesa%20un%20proyecto%20de%20digitalizaci%C3%B3n" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.1-1.7 1.2-.4 0-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.5.5c-.2.2-.3.4-.1.7.2.3.9 1.5 2 2.4 1.4 1.2 2.5 1.6 2.9 1.7.3.2.5.1.7-.1l1-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.2 1.2z"/></svg>
+        WhatsApp
+      </a>
+      <a class="btn ghost" href="mailto:hola@spatium-lab.com?subject=Proyecto%20de%20digitalizaci%C3%B3n">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        Escríbenos
+      </a>
+      <a class="btn ghost" href="https://www.instagram.com/spatium_lab" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
+        @spatium_lab
+      </a>
+      <a class="btn ghost" href="https://www.facebook.com/Spatium.lab" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.1c0-.9.3-1.5 1.6-1.5h1.3V4.9c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.2-3.2 3.3V11H9v3h2.3v7h2.2z"/></svg>
+        Spatium.lab
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fb" style="display:flex;align-items:center;gap:14px"><img src="assets/logo-white.png" alt="Spatium Lab" style="height:44px;width:auto"> Patrimonio · Historia · Cultura · Tecnología</div>
+  <div>Chihuahua, México · Parque Tecnológico Orión · 614 196 1448 · hola@spatium-lab.com</div>
+  <div>© 2026 Spatium Lab. Todos los derechos reservados.</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="assets/pano-data.js"></script>
+<script src="assets/catedral-points.js"></script>
+<script src="assets/quinta-points.js"></script>
+<script>
+(function(){
+  'use strict';
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var isMobile = window.innerWidth < 768;
+
+  /* ================= pantalla de carga ================= */
+  (function(){
+    var loaderEl = document.getElementById('loader');
+    var ldFill = document.getElementById('ldFill');
+    var assets = ['assets/ortho-catedral.webp','assets/ortho-santo.webp','assets/giga-1.webp','assets/equipo/fernando.jpeg','assets/logo-white.png'];
+    var done = 0, finished = false;
+    function finish(){
+      if(finished) return;
+      finished = true;
+      ldFill.style.width = '100%';
+      loaderEl.classList.add('done');
+      document.body.classList.remove('loading');
+      setTimeout(function(){ loaderEl.style.display = 'none'; }, 800);
+    }
+    function tick(){
+      done++;
+      ldFill.style.width = Math.max(10, Math.round(done/assets.length*100)) + '%';
+      if(done >= assets.length) setTimeout(finish, 250);
+    }
+    assets.forEach(function(u){
+      var im = new Image();
+      im.onload = tick; im.onerror = tick;
+      im.src = u;
+    });
+    setTimeout(finish, 9000); /* tope: nunca retener más de 9s */
+  })();
+
+  /* ================= reveal on scroll ================= */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+  },{threshold:.15});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  /* ================= nav dots activos ================= */
+  var dotLinks = document.querySelectorAll('nav.dots a');
+  var dotTargets = Array.prototype.map.call(dotLinks, function(a){
+    return document.querySelector(a.getAttribute('href'));
+  });
+  function updateDots(){
+    var y = window.scrollY + window.innerHeight*0.4, idx = 0;
+    dotTargets.forEach(function(t,i){ if(t && y >= t.offsetTop) idx = i; });
+    dotLinks.forEach(function(a,i){ a.classList.toggle('active', i===idx); });
+  }
+
+  /* ================= helpers scroll ================= */
+  function progressOf(el){
+    var r = el.offsetTop, h = el.offsetHeight - window.innerHeight;
+    if(h <= 0) return 0;
+    return Math.min(1, Math.max(0, (window.scrollY - r) / h));
+  }
+  function damp(cur, target, k){ return cur + (target - cur) * k; }
+  function smooth(t){ return t*t*(3-2*t); }
+
+  /* ================= ZOOM section ================= */
+  var zoomSec = document.getElementById('zoom');
+  var zoomArt = document.getElementById('zoomArt');
+  var zoomStage = document.getElementById('zoomStage');
+  var zoomLastS = 1, zoomIdleN = 0, zoomRasterized = false;
+  var zoomDetail = document.getElementById('zoomDetail');
+  var zoomDetail2 = document.getElementById('zoomDetail2');
+  var zoomDetailM = document.getElementById('zoomDetailM');
+  var zc1 = document.getElementById('zc1'), zc2 = document.getElementById('zc2');
+  var zoomCur = 0;
+
+  /* iOS/WebKit emborrona imágenes escaladas hacia ARRIBA con transform.
+     Solución: maquetar la ortho a tamaño nativo y escalar hacia ABAJO. */
+  var zBase = 1, zTx = 0, zTy = 0;
+  var isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function setupIOSZoom(){
+    if(!isIOS || !zoomStage) return;
+    var bimg = zoomStage.querySelector('img:first-child');
+    if(!bimg) return;
+    if(!bimg.naturalWidth){ bimg.addEventListener('load', setupIOSZoom, {once:true}); return; }
+    var natW = bimg.naturalWidth, natH = bimg.naturalHeight;
+    var fitW = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.78 * natW / natH);
+    bimg.style.maxWidth = 'none';
+    bimg.style.maxHeight = 'none';
+    bimg.style.width = natW + 'px';
+    zBase = fitW / natW;
+    /* iOS: origen en el santo del medallón (≈48.2% 55.5%) y translate sin factor (1-zBase)
+       para que el santo quede exacto en el centro del viewport a cualquier nivel de zoom */
+    var iosOX = 0.482, iosOY = 0.555;
+    zoomStage.style.transformOrigin = (iosOX*100) + '% ' + (iosOY*100) + '%';
+    zTx = (0.5 - iosOX) * natW;
+    zTy = (0.5 - iosOY) * natH;
+  }
+  setupIOSZoom();
+
+  /* ================= THREE: nube de puntos ================= */
+  var canvas = document.getElementById('gl');
+  var renderer, scene, camera, cloud, cloud2, TTCAM, uniforms, CAMP, ready = false;
+
+  try{
+    renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:false, alpha:true, powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight, false); /* false: el CSS manda el tamaño visual */
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, 0.1, 200);
+
+    /* --------- nube: real (Catedral) o procedural --------- */
+    function rnd(a,b){ return a + Math.random()*(b-a); }
+
+    var COUNT, pos, colors, realCloud = false;
+    if(typeof CAT_PTS !== 'undefined'){
+      try{
+        var raw = atob(CAT_PTS.b64);
+        var bytes = new Uint8Array(raw.length);
+        for(var bi=0; bi<raw.length; bi++) bytes[bi] = raw.charCodeAt(bi);
+        var totalPts = CAT_PTS.count;
+        var step = isMobile ? 2 : 1;
+        COUNT = Math.floor(totalPts/step);
+        var u16 = new Uint16Array(bytes.buffer, 0, totalPts*3);
+        var rgb8 = new Uint8Array(bytes.buffer, totalPts*6, totalPts*3);
+        pos = new Float32Array(COUNT*3);
+        colors = new Float32Array(COUNT*3);
+        var mn = CAT_PTS.min, szs = CAT_PTS.size;
+        for(var pi=0; pi<COUNT; pi++){
+          var pj = pi*step;
+          pos[pi*3]   = mn[0] + u16[pj*3]  /65535*szs[0];
+          pos[pi*3+1] = mn[1] + u16[pj*3+1]/65535*szs[1];
+          pos[pi*3+2] = mn[2] + u16[pj*3+2]/65535*szs[2];
+          colors[pi*3]   = rgb8[pj*3]/255;
+          colors[pi*3+1] = rgb8[pj*3+1]/255;
+          colors[pi*3+2] = rgb8[pj*3+2]/255;
+        }
+        realCloud = true;
+      }catch(err){ realCloud = false; }
+    }
+    if(!realCloud){
+      COUNT = isMobile ? 9000 : 17000;
+      pos = new Float32Array(COUNT*3);
+      colors = new Float32Array(COUNT*3);
+    }
+    var scatter = new Float32Array(COUNT*3);
+    var delay = new Float32Array(COUNT);
+
+    // muestrea la superficie de una caja
+    function boxPoint(cx,cy,cz,w,h,d,out){
+      var areas = [h*d, h*d, w*d, w*d, w*h, w*h]; // +x,-x,+y,-y,+z,-z
+      var total = areas.reduce(function(a,b){return a+b;},0);
+      var r = Math.random()*total, f = 0;
+      while(r > areas[f]){ r -= areas[f]; f++; }
+      var u = Math.random()-0.5, v = Math.random()-0.5;
+      switch(f){
+        case 0: out[0]=cx+w/2; out[1]=cy+u*h; out[2]=cz+v*d; break;
+        case 1: out[0]=cx-w/2; out[1]=cy+u*h; out[2]=cz+v*d; break;
+        case 2: out[0]=cx+u*w; out[1]=cy+h/2; out[2]=cz+v*d; break;
+        case 3: out[0]=cx+u*w; out[1]=cy-h/2; out[2]=cz+v*d; break;
+        case 4: out[0]=cx+u*w; out[1]=cy+v*h; out[2]=cz+d/2; break;
+        default:out[0]=cx+u*w; out[1]=cy+v*h; out[2]=cz-d/2; break;
+      }
+    }
+
+    // ¿el punto cae dentro del vano del portal? (en la fachada)
+    function inPortal(x,y,z){
+      if(z < 4.5) return false;
+      var ax = Math.abs(x);
+      if(ax < 1.5 && y < 2.6) return true;                    // jambas
+      if(y >= 2.6 && ax*ax + (y-2.6)*(y-2.6) < 1.5*1.5) return true; // arco
+      return false;
+    }
+
+    var p = [0,0,0];
+    // pesos de cada volumen del conjunto
+    var parts = [
+      {w: .34, fn: function(o){ boxPoint(0, 3, -3.5, 8, 6, 17, o); }},          // nave
+      {w: .20, fn: function(o){ boxPoint(0, 4, 5.05, 10.4, 8, .7, o); }},       // fachada
+      {w: .12, fn: function(o){ // espadaña triangular
+        var y = rnd(8, 11);
+        var half = 5.2 * (1 - (y-8)/3) * 0.5 + 0.2;
+        o[0] = rnd(-half, half); o[1] = y; o[2] = 5.05 + rnd(-.35,.35);
+      }},
+      {w: .16, fn: function(o){ boxPoint(6.4, 5.5, 4.4, 3, 11, 3, o); }},       // torre fuste
+      {w: .08, fn: function(o){ boxPoint(6.4, 12.2, 4.4, 2.5, 2.8, 2.5, o); }}, // campanario
+      {w: .05, fn: function(o){ // chapitel piramidal
+        var t = Math.random();
+        var half = 1.35*(1-t);
+        o[0] = 6.4 + rnd(-half,half); o[1] = 13.6 + t*2.6; o[2] = 4.4 + rnd(-half,half);
+      }},
+      {w: .03, fn: function(o){ // cúpula sobre crucero
+        var th = Math.random()*Math.PI*2, ph = Math.random()*Math.PI/2;
+        var R = 2.6;
+        o[0] = Math.cos(th)*Math.sin(ph)*R;
+        o[1] = 6 + Math.cos(ph)*R*0.85;
+        o[2] = -6 + Math.sin(th)*Math.sin(ph)*R;
+      }},
+      {w: .02, fn: function(o){ // cruz sobre espadaña
+        if(Math.random()<.6){ o[0]=rnd(-.08,.08); o[1]=rnd(11,12.4); o[2]=5.05+rnd(-.08,.08); }
+        else { o[0]=rnd(-.5,.5); o[1]=11.9+rnd(-.07,.07); o[2]=5.05+rnd(-.08,.08); }
+      }}
+    ];
+    var cum = [], acc = 0;
+    parts.forEach(function(pt){ acc += pt.w; cum.push(acc); });
+
+    if(!realCloud){
+      for(var i=0;i<COUNT;i++){
+        var attempts = 0;
+        do{
+          var r = Math.random()*acc, k = 0;
+          while(r > cum[k]) k++;
+          parts[k].fn(p);
+          attempts++;
+        } while(inPortal(p[0],p[1],p[2]) && attempts < 8);
+
+        pos[i*3]   = p[0] + rnd(-.04,.04);
+        pos[i*3+1] = p[1] + rnd(-.04,.04);
+        pos[i*3+2] = p[2] + rnd(-.04,.04);
+
+        var g = rnd(0.58, 0.70);
+        colors[i*3] = g; colors[i*3+1] = g*1.03; colors[i*3+2] = g*1.0;
+      }
+    }
+
+    // posición dispersa inicial: esfera amplia
+    var scR0 = realCloud ? 30 : 18, scR1 = realCloud ? 84 : 46, scH = realCloud ? 9 : 6;
+    for(var si=0;si<COUNT;si++){
+      var th2 = Math.random()*Math.PI*2, ph2 = Math.acos(rnd(-1,1)), R2 = rnd(scR0, scR1);
+      scatter[si*3]   = Math.cos(th2)*Math.sin(ph2)*R2;
+      scatter[si*3+1] = scH + Math.cos(ph2)*R2*.6;
+      scatter[si*3+2] = Math.sin(th2)*Math.sin(ph2)*R2;
+      delay[si] = Math.random();
+    }
+
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('aScatter', new THREE.BufferAttribute(scatter,3));
+    geo.setAttribute('aDelay', new THREE.BufferAttribute(delay,1));
+    geo.setAttribute('aColor', new THREE.BufferAttribute(colors,3));
+
+    uniforms = {
+      uProgress:{value: prefersReduced ? 1 : 0},
+      uScanY:{value:-2},
+      uSize:{value: realCloud ? (isMobile ? 1.1 : 1.4) : (isMobile ? 1.6 : 2.0)},
+      uReal:{value: realCloud ? 1.0 : 0.0},
+      uTeal:{value: new THREE.Color(0x1CB7AA)}
+    };
+
+    CAMP = realCloud
+      ? {r0:50, dr:14, h0:9, dh:3, look:6, ang0:-2.25, dAng:1.0,  ttR:36, ttH:11, ttLook:6,  ttAng:-1.57, scan:18}
+      : {r0:38, dr:13, h0:7, dh:3, look:5, ang0:-0.65, dAng:1.15, ttR:26, ttH:9,  ttLook:5.5, ttAng:0.5,  scan:18};
+
+    var mat = new THREE.ShaderMaterial({
+      uniforms: uniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: realCloud ? THREE.NormalBlending : THREE.AdditiveBlending,
+      vertexShader: [
+        'attribute vec3 aScatter;',
+        'attribute float aDelay;',
+        'attribute vec3 aColor;',
+        'uniform float uProgress;',
+        'uniform float uSize;',
+        'varying float vY;',
+        'varying float vMix;',
+        'varying vec3 vColor;',
+        'void main(){',
+        '  float t = clamp((uProgress - aDelay*0.35) / 0.65, 0.0, 1.0);',
+        '  t = t*t*(3.0-2.0*t);',
+        '  vec3 pos = mix(aScatter, position, t);',
+        '  vec4 mv = modelViewMatrix * vec4(pos, 1.0);',
+        '  gl_PointSize = uSize * (34.0 / -mv.z);',
+        '  vY = pos.y;',
+        '  vMix = t;',
+        '  vColor = aColor;',
+        '  gl_Position = projectionMatrix * mv;',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'precision mediump float;',
+        'uniform float uScanY;',
+        'uniform float uReal;',
+        'uniform vec3 uTeal;',
+        'varying float vY;',
+        'varying float vMix;',
+        'varying vec3 vColor;',
+        'void main(){',
+        '  vec2 c = gl_PointCoord - 0.5;',
+        '  if(dot(c,c) > 0.25) discard;',
+        '  float band = smoothstep(1.1, 0.0, abs(vY - uScanY));',
+        '  vec3 colReal = vColor * (0.9 + 0.5*band) + uTeal * band * 0.28;',
+        '  vec3 colProc = mix(vColor, uTeal, 0.25 + band*0.75);',
+        '  vec3 col = mix(colProc, colReal, uReal);',
+        '  float aReal = (0.85 + 0.15*band) * (0.15 + 0.85*vMix);',
+        '  float aProc = (0.4 + 0.6*band) * (0.25 + 0.75*vMix);',
+        '  gl_FragColor = vec4(col, mix(aProc, aReal, uReal));',
+        '}'
+      ].join('\n')
+    });
+
+    cloud = new THREE.Points(geo, mat);
+    scene.add(cloud);
+
+    /* --------- segunda nube: turntable (Quinta Carolina) --------- */
+    cloud2 = null;
+    if(typeof TT_PTS !== 'undefined'){
+      try{
+        var raw2 = atob(TT_PTS.b64);
+        var by2 = new Uint8Array(raw2.length);
+        for(var b2=0; b2<raw2.length; b2++) by2[b2] = raw2.charCodeAt(b2);
+        var n2t = TT_PTS.count;
+        var st2 = isMobile ? 2 : 1;
+        var n2 = Math.floor(n2t/st2);
+        var u162 = new Uint16Array(by2.buffer, 0, n2t*3);
+        var rgb2 = new Uint8Array(by2.buffer, n2t*6, n2t*3);
+        var pos2 = new Float32Array(n2*3), col2 = new Float32Array(n2*3);
+        var sc2 = new Float32Array(n2*3), dl2 = new Float32Array(n2);
+        var mn2 = TT_PTS.min, sz2 = TT_PTS.size;
+        for(var k=0; k<n2; k++){
+          var kj = k*st2;
+          pos2[k*3]   = mn2[0] + u162[kj*3]  /65535*sz2[0];
+          pos2[k*3+1] = mn2[1] + u162[kj*3+1]/65535*sz2[1];
+          pos2[k*3+2] = mn2[2] + u162[kj*3+2]/65535*sz2[2];
+          col2[k*3] = rgb2[kj*3]/255; col2[k*3+1] = rgb2[kj*3+1]/255; col2[k*3+2] = rgb2[kj*3+2]/255;
+          var th3 = Math.random()*Math.PI*2, ph3 = Math.acos(rnd(-1,1)), R3 = rnd(30,84);
+          sc2[k*3]   = Math.cos(th3)*Math.sin(ph3)*R3;
+          sc2[k*3+1] = 9 + Math.cos(ph3)*R3*.6;
+          sc2[k*3+2] = Math.sin(th3)*Math.sin(ph3)*R3;
+          dl2[k] = Math.random();
+        }
+        var geo2 = new THREE.BufferGeometry();
+        geo2.setAttribute('position', new THREE.BufferAttribute(pos2,3));
+        geo2.setAttribute('aScatter', new THREE.BufferAttribute(sc2,3));
+        geo2.setAttribute('aDelay', new THREE.BufferAttribute(dl2,1));
+        geo2.setAttribute('aColor', new THREE.BufferAttribute(col2,3));
+        cloud2 = new THREE.Points(geo2, mat);
+        cloud2.visible = false;
+        scene.add(cloud2);
+        TTCAM = TT_PTS.cam || null;
+      }catch(e2){ cloud2 = null; }
+    }
+    ready = true;
+  }catch(e){ /* WebGL no disponible: el sitio funciona sin 3D */ }
+
+  /* ================= precarga en reposo del resto de imágenes ================= */
+  window.addEventListener('load', function(){
+    var rest = ['assets/giga-2.webp','assets/giga-3.webp','assets/giga-4.webp',
+                'assets/equipo/fernando.jpeg','assets/equipo/adriana.png','assets/equipo/paulina.jpeg',
+                'assets/equipo/kevin.jpeg','assets/equipo/axel.png'];
+    var kick = function(){
+      rest.forEach(function(u){
+        var im = new Image();
+        im.src = u;
+        if(im.decode) im.decode().catch(function(){});
+      });
+    };
+    if('requestIdleCallback' in window) requestIdleCallback(kick, {timeout:4000});
+    else setTimeout(kick, 1500);
+  });
+
+  /* ================= videos: reproducir solo en vista ================= */
+  var vidObs = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.play().catch(function(){}); }
+      else { en.target.pause(); }
+    });
+  }, {threshold:.25});
+  document.querySelectorAll('video').forEach(function(v){ vidObs.observe(v); });
+
+  /* fade suave al reiniciar el loop del video Gaussian (por frame, sin parpadeo) */
+  var splatV = document.getElementById('splatVideo');
+  if(splatV){
+    (function splatFade(){
+      requestAnimationFrame(splatFade);
+      var d = splatV.duration;
+      if(!d || !isFinite(d) || splatV.paused) return;
+      var t = splatV.currentTime;
+      var o = Math.min(1, t / 2.5, Math.max(0, (d - t) / 2.5));
+      splatV.style.opacity = Math.max(0, o).toFixed(3);
+    })();
+  }
+
+  /* ================= gigapixel MDV ================= */
+  var mdvSec = document.getElementById('mdv');
+  var gigaImgs = document.querySelectorAll('.gigaPanel .giga');
+  var gigaCapt = document.getElementById('gigaCapt');
+  var gigaZoomEl = document.getElementById('gigaZoom');
+  var gigaCur = 0, gigaLast = -1;
+  var gigaTexts = [
+    'Óleo virreinal · el conjunto completo',
+    'La Virgen entre nubes de querubines',
+    'La Virgen toma el centro de la escena',
+    'El rostro, cada vez más cerca',
+    'Craqueladuras: la edad de la obra, visible'
+  ];
+  var gigaZooms = ['1×','1.5×','2×','4×','13×'];
+  /* recortes según orientación: horizontal usa panorámicos, vertical usa centrados */
+  function applyGigaSources(){
+    document.querySelectorAll('.gigaPanel .giga[data-wide]').forEach(function(im){
+      if(!im.getAttribute('data-narrow')) im.setAttribute('data-narrow', im.getAttribute('src'));
+      var want = (window.innerWidth > window.innerHeight) ? im.getAttribute('data-wide') : im.getAttribute('data-narrow');
+      if(im.getAttribute('src') !== want) im.setAttribute('src', want);
+    });
+  }
+  applyGigaSources();
+  window.addEventListener('resize', applyGigaSources);
+
+  /* ================= carrusel 3D del equipo ================= */
+  var eqSec = document.getElementById('equipo');
+  var ring = document.getElementById('ring');
+  var ringCards = ring.children;
+  var ringR = 300;
+  var counterF = 0.48;
+  function layoutRing(){
+    /* móvil: tarjetas separadas (sin traslape) y más de perfil para caber completas */
+    var narrow = window.innerWidth < 600;
+    var spacing = narrow ? 1.08 : (window.innerWidth < 900 ? 1.12 : 1.25);
+    counterF = narrow ? 0.30 : 0.48;
+    ringR = Math.round(ring.offsetWidth * ringCards.length * spacing / (2*Math.PI));
+  }
+  layoutRing();
+  var ringAng = 0;
+  function normAng(a){ return ((a + 180) % 360 + 360) % 360 - 180; }
+
+  /* ================= panorama 360 ================= */
+  var panoSec = document.getElementById('pano360');
+  var panoCanvas = document.getElementById('panoGl');
+  var panobar = document.getElementById('panobar');
+  var panoRenderer = null, panoScene, panoCam, panoLoaded = false;
+  var panoDragYaw = 0, panoPitch = 0;
+
+  function initPano(){
+    if(panoRenderer || !window.THREE) return;
+    try{
+      panoRenderer = new THREE.WebGLRenderer({canvas:panoCanvas, antialias:true});
+      panoRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      var pw = panoCanvas.parentElement.clientWidth, ph = panoCanvas.parentElement.clientHeight;
+      panoRenderer.setSize(pw, ph, false); /* false: el CSS (100%) manda, sin estilos inline */
+      panoScene = new THREE.Scene();
+      panoCam = new THREE.PerspectiveCamera((pw/ph < 1 ? 100 : 88), pw/ph, 0.1, 120);
+      var panoUrl = (typeof PANO_SRC !== 'undefined') ? PANO_SRC : 'assets/pano-sagrado-corazon.jpg';
+      new THREE.TextureLoader().load(panoUrl, function(tex){
+        var geo = new THREE.SphereGeometry(50, 64, 44);
+        geo.scale(-1, 1, 1);
+        panoScene.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({map:tex})));
+        panoLoaded = true;
+      });
+    }catch(e){}
+  }
+  new IntersectionObserver(function(entries, obs){
+    entries.forEach(function(en){ if(en.isIntersecting){ initPano(); obs.disconnect(); } });
+  }, {rootMargin:'900px'}).observe(panoSec);
+
+  /* arrastre con mouse para mirar alrededor */
+  var dragging = false, lastX = 0, lastY = 0;
+  panoCanvas.addEventListener('mousedown', function(e){ dragging = true; lastX = e.clientX; lastY = e.clientY; panoCanvas.style.cursor = 'grabbing'; });
+  window.addEventListener('mousemove', function(e){
+    if(!dragging) return;
+    panoDragYaw += (e.clientX - lastX) * 0.0035;
+    panoPitch = Math.max(-0.8, Math.min(0.8, panoPitch + (e.clientY - lastY) * 0.0025));
+    lastX = e.clientX; lastY = e.clientY;
+  });
+  window.addEventListener('mouseup', function(){ dragging = false; panoCanvas.style.cursor = 'grab'; });
+
+  /* ================= timeline de scroll ================= */
+  var heroSec = document.getElementById('hero');
+  var ttSec = document.getElementById('turntable');
+  var heroCopy = document.getElementById('heroCopy');
+  var heroCopy2 = document.getElementById('heroCopy2');
+  var ttbar = document.getElementById('ttbar');
+  var ttdeg = document.getElementById('ttdeg');
+
+  var cur = CAMP
+    ? {prog:0, ang:CAMP.ang0, rad:CAMP.r0 + 4, hgt:CAMP.h0, rotY:0, look:CAMP.look}
+    : {prog:0, ang:-0.65, rad:36, hgt:7, rotY:0, look:5};
+  var mouseX = 0;
+  window.addEventListener('mousemove', function(e){
+    mouseX = (e.clientX / window.innerWidth - 0.5);
+  }, {passive:true});
+
+  var t0 = performance.now();
+
+  var lastW = window.innerWidth, lastH = window.innerHeight;
+  function frame(now){
+    var t = (now - t0)/1000;
+
+    /* red de seguridad: detecta cambios de tamaño que no disparan 'resize' */
+    if(window.innerWidth !== lastW || window.innerHeight !== lastH){
+      lastW = window.innerWidth; lastH = window.innerHeight;
+      onResize();
+    }
+    var hp = progressOf(heroSec);
+    var tp = progressOf(ttSec);
+
+    /* hero copy crossfade */
+    var fade1 = 1 - Math.min(1, hp*2.4);
+    heroCopy.style.opacity = fade1;
+    heroCopy.style.transform = 'translateY(' + (-hp*90) + 'px)';
+    var fade2 = Math.min(1, Math.max(0, (hp-0.45)*3)) * (1 - Math.max(0,(hp-0.92)*12));
+    heroCopy2.style.opacity = fade2;
+
+    /* zoom gigapixel de la ortofoto */
+    var zp = progressOf(zoomSec);
+    var zRect = zoomSec.getBoundingClientRect();
+    var zVis = zRect.bottom > 0 && zRect.top < window.innerHeight;
+    zoomCur = zVis ? damp(zoomCur, zp, 0.2) : zp;
+    var s = 1 + smooth(zoomCur) * (isMobile ? 13 : 11.5);
+    if(zBase !== 1){
+      var kz = s * zBase;
+      /* compensación CONSTANTE: el origen del zoom (el santo) queda clavado en pantalla */
+      zoomStage.style.transform = 'translate(' + zTx.toFixed(1) + 'px,' + zTy.toFixed(1) + 'px) scale(' + kz.toFixed(4) + ')';
+    } else {
+      zoomStage.style.transform = 'translateZ(0) scale(' + s.toFixed(4) + ')';
+    }
+    /* re-rasterizar en pausa: nitidez inmediata al detener el scroll */
+    if(Math.abs(s - zoomLastS) > 0.0025){
+      zoomIdleN = 0;
+      if(zoomRasterized){ zoomStage.style.willChange = 'transform'; zoomRasterized = false; }
+    }else if(!zoomRasterized && ++zoomIdleN >= 6){
+      zoomStage.style.willChange = 'auto';
+      zoomRasterized = true;
+    }
+    zoomLastS = s;
+    zoomDetail.style.opacity = Math.min(1, Math.max(0, (s - 1.6) / 1.2)).toFixed(3);
+    zoomDetailM.style.opacity = Math.min(1, Math.max(0, (s - 3.4) / 1.4)).toFixed(3);
+    zoomDetail2.style.opacity = Math.min(1, Math.max(0, (s - 6.2) / 1.8)).toFixed(3);
+    zc1.style.opacity = zoomCur < 0.3 ? 1 : 0;
+    zc2.style.opacity = zoomCur > 0.6 ? 1 : 0;
+
+    /* turntable UI */
+    ttbar.style.width = (tp*100).toFixed(1) + '%';
+    ttdeg.textContent = Math.round(tp*360) + '°';
+
+    /* carrusel 3D del equipo */
+    var ep = progressOf(eqSec);
+    ringAng = damp(ringAng, -ep * (360 - 360/ringCards.length), 0.09);
+    ring.style.transform = 'translateZ(' + (-ringR) + 'px) rotateY(' + ringAng.toFixed(3) + 'deg)';
+    for(var ci=0; ci<ringCards.length; ci++){
+      var baseA = ci*(360/ringCards.length);
+      var face = normAng(baseA + ringAng);              // ángulo con que da la cara
+      var counter = -face * counterF;                    // contra-giro adaptativo
+      ringCards[ci].style.transform = 'rotateY(' + baseA + 'deg) translateZ(' + ringR + 'px) rotateY(' + counter.toFixed(2) + 'deg)';
+      var effRad = (face * (1 - counterF)) * Math.PI/180;
+      var f = Math.cos(effRad);
+      var behind = Math.abs(face) > 130 ? 0.5 : 1;       // atenúa solo las del fondo
+      ringCards[ci].style.opacity = ((0.38 + 0.62*Math.max(0, f)) * behind).toFixed(3);
+      ringCards[ci].style.filter = 'brightness(' + (0.72 + 0.28*Math.max(0, f)).toFixed(3) + ')';
+    }
+
+    /* gigapixel MDV: 4 saltos */
+    var gp = progressOf(mdvSec);
+    gigaCur = damp(gigaCur, gp, 0.09);
+    var seg = Math.min(gigaImgs.length - 1.0001, gigaCur * (gigaImgs.length - 1));
+    var gIdx = Math.floor(seg), gF = seg - gIdx;
+    for(var gi=0; gi<gigaImgs.length; gi++){
+      var o = 0, sc = 1;
+      if(gi === gIdx){ o = 1 - (gi < gigaImgs.length-1 ? gF : 0); sc = 1 + gF*0.22; }
+      else if(gi === gIdx+1){ o = gF; sc = 0.92 + gF*0.08; }
+      gigaImgs[gi].style.opacity = o.toFixed(3);
+      gigaImgs[gi].style.transform = 'scale(' + sc.toFixed(4) + ')';
+    }
+    if(gigaCapt && gIdx !== gigaLast){
+      gigaLast = gIdx;
+      gigaCapt.textContent = gigaTexts[gIdx];
+      gigaZoomEl.textContent = gigaZooms[gIdx];
+    }
+
+    /* panorama 360 */
+    var pp = progressOf(panoSec);
+    panobar.style.width = (pp*100).toFixed(1) + '%';
+    if(panoRenderer && panoLoaded){
+      var rect = panoSec.getBoundingClientRect();
+      if(rect.bottom > 0 && rect.top < window.innerHeight){
+        var yaw = pp * Math.PI * 1.9 + panoDragYaw;
+        panoCam.lookAt(Math.sin(yaw)*Math.cos(panoPitch), Math.sin(panoPitch), Math.cos(yaw)*Math.cos(panoPitch));
+        panoRenderer.render(panoScene, panoCam);
+      }
+    }
+
+    if(ready){
+      /* targets según fase */
+      var tProg, tAng, tRad, tHgt, tRotY, tLook;
+      var ttRect = ttSec.getBoundingClientRect();
+      var ttVis = ttRect.bottom > 0 && ttRect.top < window.innerHeight;
+      var ttPhase = ttVis;
+      if(cloud2){ cloud2.visible = ttPhase; cloud.visible = !ttPhase; }
+      if(ttPhase){
+        /* fase turntable */
+        tProg = 1;
+        tAng = CAMP.ttAng;
+        tRad = (cloud2 && TTCAM) ? TTCAM.r : CAMP.ttR;
+        tHgt = (cloud2 && TTCAM) ? TTCAM.h : CAMP.ttH;
+        tRotY = tp * Math.PI * 2;
+        tLook = (cloud2 && TTCAM) ? TTCAM.look : CAMP.ttLook;
+      } else {
+        /* fase hero */
+        tProg = prefersReduced ? 1 : Math.min(1, hp*1.9);
+        tAng = CAMP.ang0 + hp*CAMP.dAng + mouseX*0.12;
+        tRad = CAMP.r0 - hp*CAMP.dr;
+        tHgt = CAMP.h0 + hp*CAMP.dh;
+        tRotY = 0;
+        tLook = CAMP.look;
+      }
+      cur.prog = damp(cur.prog, tProg, 0.07);
+      cur.ang  = damp(cur.ang,  tAng, 0.06);
+      cur.rad  = damp(cur.rad,  tRad, 0.06);
+      cur.hgt  = damp(cur.hgt,  tHgt, 0.06);
+      cur.rotY = damp(cur.rotY, tRotY, 0.09);
+      cur.look = damp(cur.look, tLook, 0.06);
+
+      var heroVis = window.scrollY < heroSec.offsetTop + heroSec.offsetHeight;
+      if(heroVis || ttVis){
+        uniforms.uProgress.value = cur.prog;
+        uniforms.uScanY.value = -2 + ((t*2.2) % CAMP.scan);
+        cloud.rotation.y = cur.rotY;
+        if(cloud2) cloud2.rotation.y = cur.rotY;
+        camera.position.set(Math.sin(cur.ang)*cur.rad, cur.hgt, Math.cos(cur.ang)*cur.rad);
+        camera.lookAt(0, cur.look, 0);
+        renderer.render(scene, camera);
+      }
+    }
+
+    updateDots();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  function onResize(){
+    layoutRing();
+    setupIOSZoom();
+    if(panoRenderer){
+      var pw2 = panoCanvas.parentElement.clientWidth, ph2 = panoCanvas.parentElement.clientHeight;
+      panoRenderer.setSize(pw2, ph2, false);
+      panoCam.aspect = pw2/ph2;
+      panoCam.fov = (pw2/ph2 < 1 ? 100 : 88);
+      panoCam.updateProjectionMatrix();
+    }
+    if(!ready) return;
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+  }
+  window.addEventListener('resize', onResize);
+  /* al girar el celular las dimensiones tardan en asentarse: doble pasada */
+  window.addEventListener('orientationchange', function(){
+    setTimeout(onResize, 120);
+    setTimeout(onResize, 500);
+  });
+})();
+</script>
+</body>
+</html>
