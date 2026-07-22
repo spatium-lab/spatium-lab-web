@@ -1,0 +1,48 @@
+# Spatium Lab
+
+> Documentación digital de patrimonio cultural en Chihuahua, México. Fotogrametría, Gaussian Splatting, H-BIM, tours virtuales y fotografía arquitectónica.
+
+## Qué es Spatium Lab
+
+Spatium Lab es un estudio especializado en la documentación digital del patrimonio cultural e histórico del estado de Chihuahua, México. Combinamos tecnologías como fotogrametría de alta densidad, Gaussian Splatting, levantamiento con dron, modelado H-BIM, recorridos virtuales 360° y fotografía gigapixel para digitalizar, conservar y difundir templos, misiones, retablos y obras de arte virreinales.
+
+## Servicios
+
+- Fotografía de arquitectura y aérea (terrestre y con dron, video y foto 360°)
+- Fotogrametría topográfica, de objetos y de inmuebles (nubes de puntos, ortoimágenes, modelos 3D)
+- Digitalización (nubes de puntos, curvas de nivel, DEM/DTM/DSM, ortoimagen, gigapixel)
+- Proyecto (planos AutoCAD, modelos H-BIM en Revit para restauración y conservación)
+- Recorridos virtuales inmersivos (tours virtuales para divulgación y turismo cultural)
+- Micrositios y sitios web para proyectos culturales
+
+## Equipo
+
+Rey Fernando Montes Trevizo — Arquitecto. Fotogrametría, H-BIM, restauración de patrimonio.
+Adriana Rojas Ayala — Diseño gráfico, diseño web, fotografía, restauración.
+Paulina Vianey Carrasco Valencia — Arquitecta. Fotogrametría, H-BIM, restauración.
+Kevin Alexis Armendáriz Álvarez — Arquitecto. Fotogrametría, H-BIM, restauración.
+Axel Iván Delgado Ruiz — Diseño gráfico, diseño web, fotografía.
+José Luis Domínguez — Antropólogo. Piloto de dron, fotogrametría terrestre y aérea, gigapixel.
+
+## Ubicación
+
+Chihuahua, México — Parque Tecnológico Orión
+
+## Contacto
+
+- Web: https://www.spatium-lab.com
+- Email: hola@spatium-lab.com
+- Teléfono: +52 614 196 1448
+- WhatsApp: https://wa.me/526141961448
+- Instagram: https://www.instagram.com/spatium_lab
+- Facebook: https://www.facebook.com/Spatium.lab
+
+## Proyecto insignia
+
+Museo Digital del Virreinato (https://www.museodigitaldelvirreinato.org) — Tres siglos de arte y arquitectura virreinal de Chihuahua reunidos en un museo digital con piezas 3D, recorridos virtuales y narrativas curatoriales.
+
+## Datos técnicos del sitio
+
+- Sitemap: https://www.spatium-lab.com/sitemap.xml
+- Tecnología: HTML estático, CSS, JavaScript vanilla, desplegado en Netlify
+- Idioma principal: Español
